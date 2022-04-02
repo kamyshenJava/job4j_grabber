@@ -9,6 +9,8 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HabrCareerParse {
 
@@ -17,7 +19,16 @@ public class HabrCareerParse {
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer", SOURCE_LINK);
 
     public static void main(String[] args) throws IOException {
-        Connection connection = Jsoup.connect(PAGE_LINK);
+        HabrCareerParse parser = new HabrCareerParse();
+        for (int i = 1; i < 6; i++) {
+            String pageLink = String.format("%s?page=%d", PAGE_LINK, i);
+            parser.parsePage(pageLink).forEach(System.out::println);
+        }
+    }
+
+    private List<String> parsePage(String pageLink) throws IOException {
+        List<String> rsl = new ArrayList<>();
+        Connection connection = Jsoup.connect(pageLink);
         Document document = connection.get();
         Elements rows = document.select(".vacancy-card__inner");
         rows.forEach(row -> {
@@ -29,7 +40,8 @@ public class HabrCareerParse {
             Element linkElement = titleElement.child(0);
             String vacancyName = titleElement.text();
             String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
-            System.out.printf("%s %s %s%n", dateString, vacancyName, link);
+            rsl.add(String.format("%s %s %s%n", dateString, vacancyName, link));
         });
+        return rsl;
     }
 }
