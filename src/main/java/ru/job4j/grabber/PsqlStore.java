@@ -9,6 +9,10 @@ import java.util.Properties;
 
 public class PsqlStore implements Store, AutoCloseable {
 
+    private static final String INSERT_SQL
+            = "insert into posts(title, link, description, created) values (?, ?, ?, ?)";
+    private static final String SELECT_ALL_SQL = "select * from posts";
+    private static final String SELECT_WITH_CONDITION_SQL = "select * from posts where id = ?";
     private Connection con;
 
     public PsqlStore(Properties cfg) {
@@ -26,9 +30,8 @@ public class PsqlStore implements Store, AutoCloseable {
 
     @Override
     public void save(Post post) {
-        String sql = "insert into posts(title, link, description, created) values (?, ?, ?, ?)";
         Timestamp created = Timestamp.valueOf(post.getCreated());
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = con.prepareStatement(INSERT_SQL, Statement.RETURN_GENERATED_KEYS)) {
              ps.setString(1, post.getTitle());
              ps.setString(2, post.getLink());
              ps.setString(3, post.getDescription());
@@ -46,9 +49,8 @@ public class PsqlStore implements Store, AutoCloseable {
 
     @Override
     public List<Post> getAll() {
-        String sql = "select * from posts";
         List<Post> posts = new ArrayList<>();
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = con.prepareStatement(SELECT_ALL_SQL)) {
             try (ResultSet result = ps.executeQuery()) {
                 while (result.next()) {
                     posts.add(getPostFromResult(result));
@@ -62,9 +64,8 @@ public class PsqlStore implements Store, AutoCloseable {
 
     @Override
     public Post findById(int id) {
-        String sql = "select * from posts where id = ?";
         Post post = null;
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = con.prepareStatement(SELECT_WITH_CONDITION_SQL)) {
             ps.setInt(1, id);
             try (ResultSet result = ps.executeQuery()) {
                 if (result.next()) {
